@@ -3,7 +3,6 @@ import pytest
 from contract import CaseInput,RunInput,RunOutput
 from plugin.datasets import CASES
 from plugin.logic import pin_reference,read_dataset,save_candidate
-from plugin.storage import REPORT_PATH
 from verifier import verify_input,verify_output,verify_task
 
 @pytest.mark.parametrize('case', ['region-revenue','overdue-count'])
@@ -39,11 +38,14 @@ def test_unknown_case_and_seed_are_rejected():
 def test_receipt_tampered_malformed_or_missing(tmp_path):
     task=CaseInput('region-revenue',4);pin=pin_reference(task,tmp_path)
     out=save_candidate(RunInput('region-revenue',4,CASES['region-revenue']['solution']),tmp_path)
-    (tmp_path/REPORT_PATH).write_bytes(b'{bad')
+    (tmp_path/out.path).write_bytes(b'{bad')
     assert not verify_task('repair-sql',task,out,pin,str(tmp_path))['valid']
     out.digest=hashlib.sha256(b'{bad').hexdigest()
+    malformed_path = f'reports/result-{out.digest}.json'
+    (tmp_path/out.path).rename(tmp_path/malformed_path)
+    out.path = malformed_path
     assert not verify_task('repair-sql',task,out,pin,str(tmp_path))['valid']
-    (tmp_path/REPORT_PATH).unlink()
+    (tmp_path/out.path).unlink()
     assert not verify_task('repair-sql',task,out,pin,str(tmp_path))['valid']
 
 def test_pinned_answer_tamper_detected(tmp_path):

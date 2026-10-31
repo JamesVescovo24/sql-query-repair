@@ -12,7 +12,7 @@ An original `nanoagent.plugin/v0001` task plugin for COMP 480/580, based on the 
 |---|---|---|
 | `pin_sql_truth` | Execute the known-correct query against the same three fixtures before the agent starts; pin fixture rows and reference results. | `contract.py` typed input and reference output |
 | `read_sql_case` | Read the relational schema, business requirement, faulty SQL and multi-fixture evaluation rules. | Typed task input and read output |
-| `run_candidate_sql` | Execute a candidate read-only SELECT against three deterministic SQLite fixtures and save its executed rows, column names and SQL to `reports/result.json`. | Typed candidate input and save output |
+| `run_candidate_sql` | Execute a candidate read-only SELECT against three deterministic SQLite fixtures and save its executed rows, column names and SQL to `reports/result-<sha256>.json`. | Typed candidate input and save output |
 
 **Task:** `repair-sql` (`runner: agent`). NanoAgent invokes the reference tool *before* the agent starts and does not expose its result to the agent. The agent can call `read_sql_case` and `run_candidate_sql` and must finish with `submit` using the save tool's returned object. It cannot use the reference tool. The `submit` tool is supplied by NanoAgent and must **not** appear in `contract.TOOLS`.
 
@@ -43,6 +43,8 @@ All tools use MCP over stdio and `NANOAGENT_WORKSPACE` supplied by NanoAgent. MC
 ├── product/                # marketplace metadata and original SVG icon
 └── ui/                     # default NanoAgent v0001 schema renderer
 ```
+
+**Immutable report artifacts.** Each call to a save tool creates `reports/result-<sha256>.json` based on the exact saved bytes. Distinct inputs never overwrite one another, even when multiple tasks run in the same workspace. A temporary file is atomically renamed before the tool returns the path and hash. Never edit a report after saving it. Use the latest save tool result unchanged when calling `submit`.
 
 **How verification works.** Independently derives the exact expected aggregates from pinned source records using pure Python (not SQLite or an LLM), confirms the reference is consistent, then compares the saved executed column names and row multisets on all three fixtures. Rejects missing/malformed/tampered reports and wrong SQL results. The verifier imports only pure allowed Python modules, reads only the workspace report, never calls an LLM, and returns a `valid`, `score`, `message`, `details` verdict. The task score is 1.0 for a valid result, 0.0 otherwise.
 
@@ -85,7 +87,7 @@ The course RUSH Lab agent uses its configured **DeepSeek V4 Flash 0731** model a
 
 1. Set `OPENROUTER_API_KEY` in **your terminal environment**, for example `export OPENROUTER_API_KEY=...` in WSL. Never commit a key in `.env`, source code, tests or a GitHub repository.
 2. Copy `tests/agent_run.example.yaml` to a local config (or edit it in a private location) and replace the `model:` placeholder with the available **provider-qualified OpenRouter model ID**. The assignment names a model but does not provide a guaranteed API identifier.
-3. Run the agent and inspect `result.json`, `verdict.json`, `reference.json`, `messages.json` and the `workspace/reports/result.json` artifact:
+3. Run the agent and inspect `result.json`, `verdict.json`, `reference.json`, `messages.json` and the `workspace/reports/result-<sha256>.json` artifact (use the exact path returned by the save tool):
 
 ```bash
 uv run --project /path/to/nanoagent-production/nanoagent nanoagent plugin agent \

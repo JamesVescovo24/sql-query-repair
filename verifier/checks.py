@@ -1,23 +1,37 @@
-"""Pure deterministic report checks. No plugin imports, LLM, network or subprocesses."""
+"""Validate the exact immutable report named by its SHA-256 digest."""
+from __future__ import annotations
+
 import hashlib
 import json
+import re
 from pathlib import Path
 
-REPORT_PATH = "reports/result.json"
+REPORT_DIR = "reports"
+MAX_REPORT_BYTES = 1_000_000
+SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
+
 
 def result(ok, message, **details):
     return {"valid": bool(ok), "score": 1.0 if ok else 0.0, "message": message, "details": details}
 
+
 def read_receipt(workspace, output):
-    if output.path != REPORT_PATH:
+    digest = output.digest
+    if not isinstance(digest, str) or SHA256_PATTERN.fullmatch(digest) is None:
+        return None, "invalid report digest"
+    expected_path = f"{REPORT_DIR}/result-{digest}.json"
+    if output.path != expected_path:
         return None, "wrong report path"
-    path = Path(workspace) / REPORT_PATH
-    if path.is_symlink() or not path.is_file():
+
+    root = Path(workspace).resolve()
+    folder = root / REPORT_DIR
+    path = root / expected_path
+    if folder.is_symlink() or path.is_symlink() or not path.is_file():
         return None, "report file missing or unsafe"
-    if path.stat().st_size > 1_000_000:
+    if path.stat().st_size > MAX_REPORT_BYTES:
         return None, "report file exceeds size limit"
     raw = path.read_bytes()
-    if hashlib.sha256(raw).hexdigest() != output.digest:
+    if hashlib.sha256(raw).hexdigest() != digest:
         return None, "report digest does not match file"
     try:
         value = json.loads(raw.decode("utf-8"))
