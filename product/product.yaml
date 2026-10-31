@@ -1,0 +1,11 @@
+_ > nanoagent.plugin.v0001.ProductConfig:
+tagline: "Fix an incorrect SQL query and validate its output across three SQLite fixtures"
+summary: "A repaired query must produce the reference rows on three deterministic databases. All input data are built into the repository and no external services are called."
+highlights:
+  - "Deterministic, documented fixtures and fixed outcome rules"
+  - "Verifies an actual saved report, not a claimed answer"
+  - "Tests include malformed, missing, extra and boundary cases"
+steps:
+  - "Choose a sample task input or a supported dataset ID"
+  - "Let the agent read, work out, and save its solution"
+  - "Review the report artifact and the deterministic verifier verdict"

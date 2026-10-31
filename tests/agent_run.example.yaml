@@ -1,0 +1,25 @@
+_ > nanoagent.cli.plugin.PluginOpenRouterAgentConfig:
+plugin: .
+task: repair-sql
+arguments: tests/inputs/sample.json
+inputs: []
+timeout: 90.0
+
+llm > nanoagent.llm.openrouter.OpenRouterConfig:
+  model: REPLACE_WITH_AVAILABLE_OPENROUTER_MODEL_ID
+  max_tokens: 2048
+  temperature: 0.0
+  max_attempts: 2
+  read_timeout: 90.0
+  input_price: 0.0
+  output_price: 0.0
+
+harness > nanoagent.harness.nanoagent.NanoAgentConfig:
+  max_steps: 6
+  cost_limit: null
+  token_limit: null
+  context_window: null
+  hooks: []
+  skills: null
+  context_files: []
+  events: null

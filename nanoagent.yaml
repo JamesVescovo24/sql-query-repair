@@ -1,0 +1,36 @@
+_ > nanoagent.plugin.v0001.ManifestConfig:
+id: sql-query-repair
+name: SQL Query Repair
+version: 0.1.0
+status: ready
+spec: nanoagent.plugin/v0001
+
+runtime > nanoagent.plugin.v0001.RuntimeConfig:
+  type: mcp_stdio
+  command: [uv, run, --frozen, python, -m, plugin]
+
+permissions > nanoagent.plugin.v0001.PermissionsConfig:
+  network > nanoagent.plugin.v0001.NetworkConfig:
+    hosts: []
+  filesystem > nanoagent.plugin.v0001.FilesystemConfig:
+    write: [workspace]
+
+tools > dict[contract.Tool, nanoagent.plugin.v0001.ToolConfig]:
+  pin_sql_truth:
+    description: Pin a hidden, deterministic reference derived from the task's input before the agent starts
+  read_sql_case:
+    description: Read the task's original data and instructions from reproducible built-in fixtures
+  run_candidate_sql:
+    description: Validate the submitted candidate's structure and save its actual result artifact in the workspace
+
+tasks > dict[contract.Task, nanoagent.plugin.v0001.TaskConfig]:
+  repair-sql:
+    description: Repair a read-only query and pass multiple dataset checks
+    runner: agent
+    tools: [read_sql_case, run_candidate_sql]
+    reference: pin_sql_truth
+    instructions: |-
+      Read the task's data using read_sql_case with the exact task input.
+      Follow the task rules shown by the reader and compute a candidate solution yourself.
+      Save your candidate with run_candidate_sql. Correct errors if a tool rejects a candidate.
+      Call submit with the save tool's output object, unchanged. Do not assert success without submitting it.
